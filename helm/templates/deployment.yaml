@@ -1,0 +1,114 @@
+{{- if .Values.deployment.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "service.name" . }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      component: {{ include "service.name" . }}
+  template:
+    metadata:
+      labels:
+        component: {{ include "service.name" . }}
+        elk: "true"
+      annotations:
+        timestamp: "{{ date "20060102150405" .Release.Time }}"
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      containers:
+      {{- if .Values.sidecarContainers }}
+{{ toYaml .Values.sidecarContainers | indent 6 }}
+      {{- end }}
+      - name: {{ include "service.name" . }}
+        image: {{ .Values.image.registry }}:{{ .Values.image.tag }}
+        {{ if .Values.imagePullPolicy }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        {{ end }}
+        {{ if .Values.workingDir }}
+        workingDir: {{ .Values.workingDir }}
+        {{ end }}
+        {{- if .Values.command }}
+        command: 
+        {{- range .Values.command }}
+        - {{ . }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.command }}
+        args: 
+        {{- range .Values.args }}
+        - {{ . }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.livenessProbe }}
+        livenessProbe:
+{{ toYaml .Values.livenessProbe | indent 10 }}
+        {{- end }}
+        {{- if .Values.readinessProbe }}
+        readinessProbe:
+{{ toYaml .Values.readinessProbe | indent 10 }}
+        {{- end }}
+        {{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources  | indent 10  }}
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.service.targetPort }}
+          name: web
+        {{- range .Values.ports }}
+        - containerPort: {{ .port }}
+          name: {{ .name }}
+          protocol: {{ .protocol }}
+        {{- end }}
+        {{- if .Values.mounts }}
+        volumeMounts:
+{{ toYaml .Values.mounts | indent 10 }}
+        {{- end }}
+        {{- if .Values.env }}
+        env:
+          {{- range  $key, $value := .Values.env }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.envFromSecret }}
+        envFrom:
+        {{- range  $key, $value := .Values.SecretsPassedEnv }}
+          - secretRef:
+              name: {{ include "service.name" $ }}-{{ $key }}
+        {{- end }}
+        {{- range .Values.envFromSecret }}
+          - secretRef:
+              name: {{ . }}
+        {{- end }}
+        {{- end }}
+    {{- if not .Values.skaffoldImage }}
+      imagePullSecrets:
+      - name: {{ .Values.image.imagePullSecrets }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      {{- end }}
+      {{- if .Values.hostAliases }}
+      hostAliases:
+{{ toYaml .Values.hostAliases | indent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+    {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+{{ toYaml .Values.volumes | indent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 6 }}
+      {{- end }}
+      {{ if .Values.nodeName }}
+      nodeName: {{ .Values.nodeName }}
+      {{ end }}
+{{- end -}}

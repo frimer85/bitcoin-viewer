@@ -1,0 +1,46 @@
+{{- $root := . -}}
+{{- range .Values.ingress }}
+{{- $root_int := . -}}
+{{- if .enabled -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "service.name" $ }}-{{ .name }}
+{{- with .annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+{{- if .tls }}
+  tls:
+  {{- range .tls }}
+    - hosts:
+      {{- range .hosts }}
+        {{- if $root.Values.environment }}
+        - "{{ $root.Values.environment }}-{{ . }}"
+        {{- end }}
+        - {{ . }}
+      {{- end }}
+      secretName: {{ .secretName }}
+  {{- end }}
+{{- end }}
+  rules:
+  {{- range .hosts }}
+    - host: {{ $root.Values.environment }}-{{ . }}
+      http:
+        paths:
+          - path: {{ $root_int.path }}
+            backend:
+              serviceName: {{ include "service.name" $ }}
+              servicePort: {{ $root.Values.service.port }}
+    - host: {{ . }}
+      http:
+        paths:
+          - path: {{ $root_int.path }}
+            backend:
+              serviceName: {{ include "service.name" $ }}
+              servicePort: {{ $root.Values.service.port }}
+{{- end }}
+{{- end }}
+---
+{{- end }}

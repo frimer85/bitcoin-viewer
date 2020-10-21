@@ -1,0 +1,179 @@
+# Environment variable, this will be overriden in each environment using --set in the gitlab-ci
+environment: us
+
+# Image pull specification
+image:
+  registry: homeworkcontainerregistry101.azurecr.io/bitcoin
+  tag: master
+  imagePullSecrets: gitlab-auth
+
+
+# pod replicas count
+replicas: 1
+
+
+# Enviornment variables
+env:
+
+# A list of existing secrets, that will be passed to env variables.
+envFromSecret: {}
+#  - mysecret1
+#  - mysecret2
+
+
+# This part is not recommended!! If you can, always use environment variables.
+# Volumes and mount, this is the way to mount secrets\configmaps to your pod
+# The remarks are an example for tomcat parameters.conf
+# Reference: https://kubernetes.io/docs/concepts/storage/volumes/
+volumes: {}
+#  - name: app-config
+#    projected:
+#      sources:
+#      - configMap:
+#          name: central-configmap
+#      - secret:
+#          name: tomcat-parameters  
+mounts: {}
+#  - name: app-config
+#    mountPath: /etc/lacoon/conf.d/
+#    readOnly: true
+
+
+# Every service must have this part configured, because a service that doesn't configure requests\limits can impact other services as well!!!
+# Resources memory, cpu and ephemeral storage requests and limits.
+# Reference: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+resources: 
+  requests:
+    memory: "512Mi" 
+    cpu: "100m" # This units is 1 cpu core divided by 1000 (core/1000)
+  limits:
+    memory: "512Mi"
+    cpu: "1000m"
+
+
+# Liveness and readiness configuration
+# Reference: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /
+    port: 5000
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+readinessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /
+    port: 5000 # Value of LISTEN_PORT
+    scheme: HTTP
+  periodSeconds: 300
+  successThreshold: 1
+  timeoutSeconds: 1
+
+
+# Define the way the service is exposed, including port, which is unique among all micro-services in the cluster.
+# Reference: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+service:
+  type: ClusterIP
+  port: 5000 
+  targetPort: 5000
+
+
+# Define how many pods have to be available at any given moment
+# https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  maxUnavailable:
+
+
+# Define the ingress that will be created for the service (same as defining an nginx site)
+# This is an internal ingress example (for service that need to be exposed inside our vpc),
+# for service that need to be exposed to external network (for example dashboard),
+# change the ingress.class to "external"
+ingress:
+  # multi ingress (ingress is an array)
+  #- name: external
+  #  enabled: true
+  #  path: /
+  #  hosts:
+  #    - <SERVICE.example.com>
+  #  annotations:
+  #    ### Ingress class (internal - for internal communications between SBM services / external - for external communications - such as GDM, dashboard, GW)
+  #    kubernetes.io/ingress.class: external
+  #  tls:
+  #    - secretName: ingress-shared-certs
+  #      # hostname
+  #      hosts:
+  #        - <SERVICE.example.com>
+
+
+# node selector and affinity, this is used to select specific k8s nodes that the pod will run on
+# Reference: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+nodeSelector: {}
+affinity: {}
+
+# specify a specific node name to run the deployment on
+# Reference: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodename
+nodeName:
+
+# add tolerations to the pod to allow scheduling on tainted nodes
+# Reference: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/#taint-nodes-by-condition
+tolerations: []
+  # - key: node-role.kubernetes.io/master
+  #   operator: Exists
+  #   effect: NoSchedule
+
+# Define the metrics collection (for prometheus)
+# Reference: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#servicemonitorspec
+metrics:
+  enabled: false
+  path: /metrics
+
+# Define if a deployment should be added, default to true.
+# This was created to enable a two phase deployment in CI process.
+deployment:
+  enabled: true
+
+# hostAliases allows the modification of the hosts file inside a container
+hostAliases: []
+# - ip: "192.168.1.10"
+#   hostnames:
+#   - "example.com"
+#   - "www.example.com"
+
+# Define extra ports
+ports: {}
+  # - port: 514
+  #   name: syslog1
+  #   protocol: UDP
+  # - port: 1514
+  #   name: syslog2
+  #   protocol: TCP
+  # - port: 6514
+  #   name: syslog3
+  #   protocol: TCP
+  # - port: 601
+  #   name: syslog4
+  #   protocol: TCP
+  
+# Define command and argsargs 
+command: [] # ["printenv"]
+args: []  # ["HOSTNAME", "KUBERNETES_PORT"]
+
+# Define optional side-car containers
+sidecarContainers: []
+# - name: sidecar-container
+#   image: sidecar-image:latest
+#   volumeMounts:
+#     - name: vol_name
+#     mountPath: /path
+
+job:
+  enabled: false
+
+cronjob:
+  enabled: false

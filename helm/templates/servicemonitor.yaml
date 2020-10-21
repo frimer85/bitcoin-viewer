@@ -1,0 +1,28 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "service.name" . }}
+  labels:
+    component: {{ include "service.name" . }}
+    release: prometheus-operator
+spec:
+  selector:
+    matchLabels:
+      component: {{ include "service.name" . }}
+  endpoints:
+    - port: {{ include "service.name" . }}
+  {{- if .Values.metrics.interval }}
+      interval: {{ .Values.metrics.interval }}
+  {{- end }}
+  {{- if .Values.metrics.scrapeTimeout }}
+      scrapeTimeout: {{ .Values.metrics.scrapeTimeout }}
+  {{- end }}
+  {{- if .Values.metrics.path }}
+      path: {{ .Values.metrics.path }}
+  {{- end }}
+  {{- if .Values.metrics.honorLabels }}
+      honorLabels: {{ .Values.metrics.honorLabels }}
+  {{- end }}
+  jobLabel: component
+{{- end }}

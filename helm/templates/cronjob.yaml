@@ -1,0 +1,81 @@
+{{- if .Values.cronjob.enabled -}}
+{{- $chart_name := .Chart.Name }}
+{{- $chart_version := .Chart.Version | replace "+" "_" }}
+{{- $release_name := .Release.Name }}
+{{- $image_registry := .Values.image.registry }}
+{{- $image_tag := .Values.image.tag }}
+{{- $image_pull_secret := .Values.image.imagePullSecrets }}
+{{- $image_pull_policy := .Values.imagePullPolicy }}
+{{- $env_values := .Values.env }}
+{{- $node_selector := .Values.nodeSelector }}
+{{- range $job := .Values.jobs }}
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: "{{ $release_name }}-{{ $job.name }}"
+  labels:
+    chart: "{{ $chart_name }}-{{ $chart_version }}"
+spec:
+  concurrencyPolicy: {{ $job.concurrencyPolicy }}
+  failedJobsHistoryLimit: {{ $job.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ $release_name }}
+            cron: {{ $job.name }}
+            elk: "true"
+            log_format: "json"
+            component: {{ $chart_name }}
+        spec:
+          containers:
+          - image: {{ $image_registry }}:{{ $image_tag }}
+            {{ if $image_pull_policy }}
+            imagePullPolicy: {{ $image_pull_policy }}
+            {{ end }}
+            name: {{ $job.name }}
+            env:
+            {{- range  $key, $value := $env_values }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if $job.command }}
+            command: {{ $job.command }}
+            {{- end }}
+            {{- with $job.args }}
+            args:
+{{ toYaml . | indent 12 }}
+              {{- end }}
+            {{- with $job.resources }}
+            resources:
+{{ toYaml . | indent 14 }}
+            {{- end }}
+            {{- with $job.volumeMounts }}
+            volumeMounts:
+{{ toYaml . | indent 12 }}
+            {{- end }}
+      {{- if $node_selector }}
+            nodeSelector:
+{{ toYaml $node_selector | indent 14 }}
+            {{- end }}
+          imagePullSecrets:
+          - name: {{ $image_pull_secret }}
+          {{- with $job.affinity }}
+          affinity:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          {{- with $job.tolerations }}
+          tolerations:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          restartPolicy: {{ $job.restartPolicy }}
+          {{- with $job.volumes }}
+          volumes:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+  schedule: {{ $job.schedule | quote }}
+  successfulJobsHistoryLimit: {{ $job.successfulJobsHistoryLimit }}
+{{- end }}
+{{- end }}

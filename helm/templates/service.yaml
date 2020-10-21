@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "service.name" . }}
+  labels:
+    component: {{ include "service.name" . }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    component: {{ include "service.name" . }}
+  ports:
+    - port: {{ .Values.service.port }}
+      name: {{ include "service.name" . }}
+      targetPort: {{ .Values.service.targetPort }}
+    {{- range .Values.ports }}
+    - port: {{ .port }}
+      name: {{ .name }}
+      targetPort: {{ .port }}
+      protocol: {{ .protocol }}
+    {{- end }}
