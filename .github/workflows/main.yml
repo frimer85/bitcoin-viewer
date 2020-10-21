@@ -2,7 +2,7 @@ on: [push]
 name: CI
 
 jobs:
-    build-and-deploy:
+    build-and-push:
         runs-on: ubuntu-latest
         steps:
         # checkout the repo
@@ -23,7 +23,17 @@ jobs:
         - run: |
             docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/bitcoin:master
             docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/bitcoin:master
-
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Set AKS Context
+          uses: azure/aks-set-context@v1
+          with:
+              creds: '${{ secrets.AZURE_CREDENTIALS }}' # Azure credentials
+              resource-group: 'homework-rg'
+              cluster-name: 'homework-aks'
+          id: login
+          
         - name: Set imagePullSecret
           uses: azure/k8s-create-secret@v1
           with:
@@ -33,3 +43,17 @@ jobs:
             container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
             secret-name: 'acr-auth'
           id: create-secret
+        
+        - uses: actions/checkout@v1
+
+        - name: 'Deploy'
+          uses: 'deliverybot/helm@v1'
+          with:
+            release: 'bitcoin'
+            namespace: 'default'
+            chart: 'helm'
+            token: '${{ github.token }}'
+            value-files: 'values.yml'
+            helm: helm3
+          env:
+            KUBECONFIG_FILE: '${{ secrets.AKS_KUBECONFIG }}'

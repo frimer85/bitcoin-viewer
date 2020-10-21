@@ -5,7 +5,7 @@ environment: us
 image:
   registry: homeworkcontainerregistry101.azurecr.io/bitcoin
   tag: master
-  imagePullSecrets: gitlab-auth
+  imagePullSecrets: acr-auth
 
 
 # pod replicas count
