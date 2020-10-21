@@ -96,19 +96,13 @@ podDisruptionBudget:
 # change the ingress.class to "external"
 ingress:
   # multi ingress (ingress is an array)
-  #- name: external
-  #  enabled: true
-  #  path: /
-  #  hosts:
-  #    - <SERVICE.example.com>
-  #  annotations:
-  #    ### Ingress class (internal - for internal communications between SBM services / external - for external communications - such as GDM, dashboard, GW)
-  #    kubernetes.io/ingress.class: external
-  #  tls:
-  #    - secretName: ingress-shared-certs
-  #      # hostname
-  #      hosts:
-  #        - <SERVICE.example.com>
+  - name: addon-http
+    enabled: true
+    path: /
+    hosts:
+      - aks-bitcoin.cd15b34b0e174687be4d.westus2.aksapp.io
+    annotations:
+      kubernetes.io/ingress.class: addon-http-application-routing
 
 
 # node selector and affinity, this is used to select specific k8s nodes that the pod will run on
