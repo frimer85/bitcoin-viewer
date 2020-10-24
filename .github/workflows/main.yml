@@ -23,9 +23,7 @@ jobs:
         - run: |
             docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/bitcoin:master
             docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/bitcoin:master
-    deploy:
-        runs-on: ubuntu-latest
-        steps:
+        
         - name: Set AKS Context
           uses: azure/aks-set-context@v1
           with:

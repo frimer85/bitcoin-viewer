@@ -6,7 +6,7 @@ image:
   registry: homeworkcontainerregistry101.azurecr.io/bitcoin
   tag: master
   imagePullSecrets: acr-auth
-
+imagePullPolicy: Always
 
 # pod replicas count
 replicas: 1
@@ -56,7 +56,7 @@ resources:
 livenessProbe:
   failureThreshold: 3
   httpGet:
-    path: /
+    path: /service-A
     port: 5000
     scheme: HTTP
   initialDelaySeconds: 10
@@ -66,7 +66,7 @@ livenessProbe:
 readinessProbe:
   failureThreshold: 3
   httpGet:
-    path: /
+    path: /service-A
     port: 5000 # Value of LISTEN_PORT
     scheme: HTTP
   periodSeconds: 300
@@ -81,15 +81,6 @@ service:
   port: 5000 
   targetPort: 5000
 
-
-# Define how many pods have to be available at any given moment
-# https://kubernetes.io/docs/tasks/run-application/configure-pdb/
-podDisruptionBudget:
-  enabled: false
-  minAvailable: 1
-  maxUnavailable:
-
-
 # Define the ingress that will be created for the service (same as defining an nginx site)
 # This is an internal ingress example (for service that need to be exposed inside our vpc),
 # for service that need to be exposed to external network (for example dashboard),
@@ -98,9 +89,9 @@ ingress:
   # multi ingress (ingress is an array)
   - name: addon-http
     enabled: true
-    path: /
+    path: /service-A
     hosts:
-      - aks-bitcoin.cd15b34b0e174687be4d.westus2.aksapp.io
+      - aks-bitcoin.43d31aa7dd8c4342b935.westus2.aksapp.io
     annotations:
       kubernetes.io/ingress.class: addon-http-application-routing
 
@@ -165,9 +156,3 @@ sidecarContainers: []
 #   volumeMounts:
 #     - name: vol_name
 #     mountPath: /path
-
-job:
-  enabled: false
-
-cronjob:
-  enabled: false
